@@ -8,7 +8,7 @@ st.set_page_config(page_title="📈 Walmart Demand Forecasting", layout="centere
 st.title("📊 Walmart Demand Forecasting")
 
 # ---- 2. Load Model & Features ----
-rf_model = joblib.load("Walmart_rf_model.pkl")
+rf_model = joblib.load("Walmart.pkl")
 
 # ---- 3. Load Product Data ----
 # Only for mapping product_id to product_name
