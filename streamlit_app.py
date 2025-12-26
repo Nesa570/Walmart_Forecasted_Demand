@@ -18,7 +18,7 @@ def load_model():
         return model, features, True
     except FileNotFoundError:
         st.warning("⚠️ 'Walmart.pkl' or 'Walmart_features.pkl' not found. Using demo model.")
-        # Create a dummy model
+# Create a dummy model
         dummy_model = RandomForestRegressor()
         df_demo = pd.DataFrame({
             "unit_price": [5, 6, 7, 8],
@@ -29,6 +29,22 @@ def load_model():
         y_demo = np.array([100, 80, 90, 70])
         dummy_model.fit(df_demo, y_demo)
         return dummy_model, df_demo.columns, False
+    except Exception as e:
+        st.error(f"❌ Error loading model: {e}")
+        
+# Return dummy model so app continues
+        dummy_model = RandomForestRegressor()
+        df_demo = pd.DataFrame({
+            "unit_price": [5],
+            "store_id": [1],
+            "department_id": [1],
+            "IsHoliday": [True]
+        })
+        dummy_model.fit(df_demo, [50])
+        return dummy_model, df_demo.columns, False
+
+# ---- Load model safely ----
+rf_model, feature_columns, is_real_model = load_model()
 
 # ---- Load Product Lookup ----
 @st.cache_data
@@ -61,8 +77,6 @@ unit_price = st.number_input("Unit Price", min_value=0.0, value=5.99, step=0.01)
 store_id = st.number_input("Store ID", min_value=1, value=1)
 department_id = st.number_input("Department ID", min_value=1, value=1)
 is_holiday = st.selectbox("Is Holiday", options=[True, False], index=0)
-
-# Add more features if your model has them
 
 # ---- Predict Button ----
 if st.button("Predict Demand"):
