@@ -32,7 +32,9 @@ def load_products():
         return pd.DataFrame(columns=["product_id", "product_name"])
 
 product_lookup = load_products()
-
+    if rf_model is not None:
+     st.success("✅ Model loaded successfully!")
+    
     # ---- Product ID Input ----
     st.subheader("🛒 Enter Product ID")
     product_id = st.number_input("Product ID", min_value=1, value=1, step=1)
