@@ -17,7 +17,6 @@ def load_model():
         return model, features
     except FileNotFoundError:
         st.error("❌ 'Walmart.pkl' or 'Walmart_features.pkl' not found in app folder.")
-        return None, None
 
 rf_model, feature_columns = load_model()
 
