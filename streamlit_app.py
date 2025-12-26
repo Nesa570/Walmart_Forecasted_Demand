@@ -50,11 +50,11 @@ rf_model, feature_columns, is_real_model = load_model()
 @st.cache_data
 def load_products():
     try:
-        df = pd.read_csv("Walmart_clean.csv")  # Must contain product_id and product_name
-        return df[["product_id", "product_name"]].drop_duplicates()
+        df = pd.read_csv("Walmart_clean.csv") 
+        return df[["product_id", "category"]].drop_duplicates()
     except FileNotFoundError:
         st.warning("⚠️ 'Walmart_clean.csv' not found. Product lookup unavailable.")
-        return pd.DataFrame(columns=["product_id", "product_name"])
+        return pd.DataFrame(columns=["product_id", "category"])
 
 product_lookup = load_products()
 
@@ -63,12 +63,12 @@ st.subheader("🛒 Enter Product ID")
 product_id = st.number_input("Product ID", min_value=1, value=1, step=1)
 
 # Auto get product name
-product_name = product_lookup.loc[product_lookup["product_id"] == product_id, "product_name"]
-if not product_name.empty:
-    product_name = product_name.values[0]
-    st.write(f"**Product Name:** {product_name}")
+category = product_lookup.loc[product_lookup["category"] == category, "category"]
+if not category.empty:
+    category = category.values[0]
+    st.write(f"**category:** {category}")
 else:
-    product_name = "Unknown"
+    category = "Unknown"
     st.warning("❌ Product ID not found in lookup table.")
 
 # ---- Manual Feature Inputs ----
@@ -99,12 +99,12 @@ if st.button("Predict Demand"):
 
         # Show results
         st.subheader("✅ Forecasted Demand")
-        st.write(f"**Product:** {product_name}")
+        st.write(f"**Product:** {category}")
         st.write(f"**Forecasted Demand:** {int(prediction)} units")
 
         # Bar chart
         fig, ax = plt.subplots(figsize=(6,4))
-        ax.bar([product_name], [prediction], color="skyblue")
+        ax.bar([category], [prediction], color="skyblue")
         ax.set_ylabel("Units")
         ax.set_title("Forecasted Demand")
         st.pyplot(fig)
