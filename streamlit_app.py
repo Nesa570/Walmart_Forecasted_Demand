@@ -14,12 +14,12 @@ st.title("📈 Walmart Demand Forecasting App")
 def load_model():
     try:
         model = joblib.load("Walmart.pkl")
-        return model, features
+        return model
     except FileNotFoundError:
         st.error("❌ Model or feature files not found! Make sure 'Walmart.pkl' and 'Walmart_features.pkl' are in the app folder.")
         return None, None
 
-rf_model, feature_columns = load_model()
+rf_model = load_model()
 
 if rf_model is not None:
     st.success("Model loaded successfully!")
