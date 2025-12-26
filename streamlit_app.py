@@ -21,35 +21,56 @@ def load_model():
 
 rf_model, feature_columns = load_model()
 
+# ---- Load Product Lookup ----
+@st.cache_data
+def load_products():
+    try:
+        df = pd.read_csv("Walmart_clean.csv")  # Must contain product_id and product_name
+        return df[["product_id", "product_name"]].drop_duplicates()
+    except FileNotFoundError:
+        st.warning("⚠️ 'Walmart_clean.csv' not found. Product lookup unavailable.")
+        return pd.DataFrame(columns=["product_id", "product_name"])
+
+product_lookup = load_products()
+
 if rf_model is not None:
     st.success("✅ Model loaded successfully!")
 
-    # ---- Manual Input Section ----
-    st.subheader("📝 Enter Feature Values for Forecast")
+    # ---- Product ID Input ----
+    st.subheader("🛒 Enter Product ID")
+    product_id = st.number_input("Product ID", min_value=1, value=1, step=1)
 
-    # Numeric features
+    # Auto get product name
+    product_name = product_lookup.loc[product_lookup["product_id"] == product_id, "product_name"]
+    if not product_name.empty:
+        product_name = product_name.values[0]
+        st.write(f"**Product Name:** {product_name}")
+    else:
+        product_name = "Unknown"
+        st.warning("❌ Product ID not found in lookup table.")
+
+    # ---- Manual Feature Inputs ----
+    st.subheader("📝 Enter Other Feature Values")
+
     unit_price = st.number_input("Unit Price", min_value=0.0, value=5.99, step=0.01)
     store_id = st.number_input("Store ID", min_value=1, value=1)
     department_id = st.number_input("Department ID", min_value=1, value=1)
-
-    # Boolean feature
     is_holiday = st.selectbox("Is Holiday", options=[True, False], index=0)
 
-    # Add more features here if your model has them
-    # For example: "temperature", "promotion_flag", etc.
+    # Add more features if your model requires
 
     if st.button("Predict Demand"):
         try:
-            # Create a DataFrame with user inputs
+            # Create DataFrame with all inputs
             df_input = pd.DataFrame({
                 "unit_price": [unit_price],
                 "store_id": [store_id],
                 "department_id": [department_id],
                 "IsHoliday": [is_holiday]
-                # Add more features here if needed
+                # Add more features here
             })
 
-            # Encode & align features with training model
+            # Encode & align with training features
             df_encoded = pd.get_dummies(df_input)
             df_encoded = df_encoded.reindex(columns=feature_columns, fill_value=0)
 
@@ -58,11 +79,12 @@ if rf_model is not None:
 
             # Show result
             st.subheader("✅ Forecasted Demand")
-            st.write(f"📊 Forecasted Demand: {int(prediction)} units")
+            st.write(f"**Product:** {product_name}")
+            st.write(f"**Forecasted Demand:** {int(prediction)} units")
 
             # Optional: Plot bar chart
             fig, ax = plt.subplots(figsize=(6,4))
-            ax.bar(["Forecasted Demand"], [prediction], color="skyblue")
+            ax.bar([product_name], [prediction], color="skyblue")
             ax.set_ylabel("Units")
             ax.set_title("Forecasted Demand")
             st.pyplot(fig)
