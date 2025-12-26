@@ -33,7 +33,7 @@ def load_products():
 
 product_lookup = load_products()
     if rf_model is not None:
-     st.success("✅ Model loaded successfully!")
+    st.success("✅ Model loaded successfully!")
     
     # ---- Product ID Input ----
     st.subheader("🛒 Enter Product ID")
