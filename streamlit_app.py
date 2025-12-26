@@ -25,16 +25,13 @@ rf_model, feature_columns = load_model()
 @st.cache_data
 def load_products():
     try:
-        df = pd.read_csv("Walmart_clean.csv")  # Must contain product_id and product_name
+        df = pd.read_csv("Walmart_clean.csv")
         return df[["product_id", "product_name"]].drop_duplicates()
     except FileNotFoundError:
         st.warning("⚠️ 'Walmart_clean.csv' not found. Product lookup unavailable.")
         return pd.DataFrame(columns=["product_id", "product_name"])
 
 product_lookup = load_products()
-
-if rf_model is not None:
-    st.success("✅ Model loaded successfully!")
 
     # ---- Product ID Input ----
     st.subheader("🛒 Enter Product ID")
