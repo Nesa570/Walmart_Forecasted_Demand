@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 # ---- Page Config ----
 st.set_page_config(page_title="Walmart Demand Forecast", layout="centered")
-st.title("📈 Walmart Demand Forecasting App")
+st.title("📈 Walmart Demand Forecasting")
 
 # ---- Load Model & Features ----
 @st.cache_resource
@@ -50,11 +50,11 @@ rf_model, feature_columns, is_real_model = load_model()
 @st.cache_data
 def load_products():
     try:
-        df = pd.read_csv("Walmart_clean.csv") 
-        return df[["product_id", "category"]].drop_duplicates()
-    except FileNotFoundError:
-        st.warning("⚠️ 'Walmart_clean.csv' not found. Product lookup unavailable.")
-        return pd.DataFrame(columns=["product_id", "category"])
+        df = pd.read_csv("Walmart_clean.csv")  # Must contain product_id, product_name, category
+        return df[["product_id", "product_name", "category"]].drop_duplicates()
+    except Exception:
+        st.warning("⚠️ Product lookup CSV not found. Using empty lookup.")
+        return pd.DataFrame(columns=["product_id", "product_name", "category"])
 
 product_lookup = load_products()
 
@@ -62,12 +62,15 @@ product_lookup = load_products()
 st.subheader("🛒 Enter Product ID")
 product_id = st.number_input("Product ID", min_value=1, value=1, step=1)
 
-# Auto get product name
-category = product_lookup.loc[product_lookup["category"] == category, "category"]
-if not category.empty:
-    category = category.values[0]
-    st.write(f"**category:** {category}")
+# Auto-fill product name and category
+product_info = product_lookup[product_lookup["product_id"] == product_id]
+if not product_info.empty:
+    product_name = product_info["product_name"].values[0]
+    category = product_info["category"].values[0]
+    st.write(f"**Product Name:** {product_name}")
+    st.write(f"**Category:** {category}")
 else:
+    product_name = "Unknown"
     category = "Unknown"
     st.warning("❌ Product ID not found in lookup table.")
 
@@ -81,30 +84,26 @@ is_holiday = st.selectbox("Is Holiday", options=[True, False], index=0)
 # ---- Predict Button ----
 if st.button("Predict Demand"):
     try:
-        # Create DataFrame with inputs
         df_input = pd.DataFrame({
             "unit_price": [unit_price],
             "store_id": [store_id],
             "department_id": [department_id],
             "IsHoliday": [is_holiday]
-            # Add more features here
         })
 
-        # Encode & align features
         df_encoded = pd.get_dummies(df_input)
         df_encoded = df_encoded.reindex(columns=feature_columns, fill_value=0)
 
-        # Predict
         prediction = rf_model.predict(df_encoded)[0]
 
-        # Show results
         st.subheader("✅ Forecasted Demand")
-        st.write(f"**Product:** {category}")
+        st.write(f"**Product:** {product_name}")
+        st.write(f"**Category:** {category}")
         st.write(f"**Forecasted Demand:** {int(prediction)} units")
 
-        # Bar chart
+        # Plot
         fig, ax = plt.subplots(figsize=(6,4))
-        ax.bar([category], [prediction], color="skyblue")
+        ax.bar([product_name], [prediction], color="skyblue")
         ax.set_ylabel("Units")
         ax.set_title("Forecasted Demand")
         st.pyplot(fig)
