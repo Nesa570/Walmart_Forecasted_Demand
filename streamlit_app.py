@@ -3,53 +3,58 @@ import pandas as pd
 import numpy as np
 import joblib
 
-# -----------------------------
-# 1️⃣ Page config
-# -----------------------------
-st.set_page_config(
-    page_title="📈 Walmart Demand Predictor",
-    layout="centered"
-)
+# ---- 1. App Configuration ----
+st.set_page_config(page_title="📈 Walmart Demand Forecasting", layout="centered")
+st.title("📊 Walmart Demand Forecasting")
 
-st.title("📊 Walmart Demand Forecast Predictor")
-st.caption("Predict demand based on product, unit price, and holiday status")
+# ---- 2. Load Model & Features ----
+rf_model = joblib.load("Walmart_rf_model.pkl")
 
-# -----------------------------
-# 2️⃣ Load tiny model & product mapping
-# -----------------------------
-@st.cache_data
-def load_model():
-    rf_model = joblib.load("Walmart_tiny.pkl")          # tiny model (<100 KB)
-    product_lookup = joblib.load("Walmart_product.pkl") # product_id → product_name mapping
-    return rf_model, product_lookup
+# ---- 3. Load Product Data ----
+# Only for mapping product_id to product_name
+df_products = pd.read_csv("Walmart_clean.csv")[["product_id", "product_name", "unit_price"]].drop_duplicates()
 
-rf_model, product_lookup = load_model()
+# ---- 4. User Inputs ----
+product_id = st.selectbox("Select Product ID", df_products["product_id"].unique())
 
-# -----------------------------
-# 3️⃣ User input
-# -----------------------------
-st.subheader("Enter Product Details")
+# Fetch product name & default unit price
+product_info = df_products[df_products["product_id"] == product_id].iloc[0]
+product_name = product_info["product_name"]
+unit_price = st.number_input("Unit Price", value=float(product_info["unit_price"]))
 
-product_id = st.selectbox("Select Product ID", list(product_lookup.keys()))
-unit_price = st.number_input("Unit Price ($)", min_value=0.0, value=5.0, step=0.1)
-is_holiday = st.radio("Is it a holiday?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
+st.write(f"**Product Name:** {product_name}")
 
-# -----------------------------
-# 4️⃣ Prepare input
-# -----------------------------
-X_user = pd.DataFrame({
-    "unit_price": [unit_price],
-    "IsHoliday": [is_holiday]
-})
+# ---- 5. Prepare Feature Input for Model ----
+# Create a single-row dataframe with all features as 0
+input_df = pd.DataFrame(np.zeros((1, len(feature_columns))), columns=feature_columns)
 
-# -----------------------------
-# 5️⃣ Make prediction
-# -----------------------------
-if st.button("Predict Demand"):
-    demand_pred = rf_model.predict(X_user)[0]
-    st.success(f"Predicted Demand for **{product_lookup[product_id]}**: {demand_pred:.1f} units")
+# Set numerical features
+if "unit_price" in input_df.columns:
+    input_df["unit_price"] = unit_price
 
-# -----------------------------
-# 6️⃣ Optional: Show product name
-# -----------------------------
-st.write(f"✅ You selected: **{product_lookup[product_id]}**")
+# If product_id is categorical, set corresponding one-hot column to 1
+product_col = f"product_id_{product_id}"
+if product_col in input_df.columns:
+    input_df[product_col] = 1
+
+# ---- 6. Forecast Demand ----
+forecasted_demand = rf_model.predict(input_df)[0]
+st.success(f"📈 Forecasted Demand: {round(forecasted_demand, 2)} units")
+
+# ---- 7. Optional: Plot Unit Price vs Forecasted Demand ----
+import matplotlib.pyplot as plt
+
+# Create a small range of prices around current unit price
+price_range = np.linspace(unit_price*0.8, unit_price*1.2, 10)
+demand_range = []
+
+for price in price_range:
+    input_df["unit_price"] = price
+    demand_range.append(rf_model.predict(input_df)[0])
+
+fig, ax = plt.subplots()
+ax.plot(price_range, demand_range, marker='o')
+ax.set_xlabel("Unit Price")
+ax.set_ylabel("Forecasted Demand")
+ax.set_title(f"Forecasted Demand vs Unit Price for {product_name}")
+st.pyplot(fig)
