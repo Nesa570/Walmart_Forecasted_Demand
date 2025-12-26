@@ -30,8 +30,6 @@ def load_model():
         dummy_model.fit(df_demo, y_demo)
         return dummy_model, df_demo.columns, False
 
-rf_model, feature_columns, is_real_model = load_model()
-
 # ---- Load Product Lookup ----
 @st.cache_data
 def load_products():
