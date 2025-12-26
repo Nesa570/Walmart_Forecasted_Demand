@@ -1,66 +1,55 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import joblib
 
-# ---- Page Config ----
-st.set_page_config(page_title="Walmart Demand Forecast", layout="centered")
+# -----------------------------
+# 1️⃣ Page config
+# -----------------------------
+st.set_page_config(
+    page_title="📈 Walmart Demand Predictor",
+    layout="centered"
+)
 
-st.title("📈 Walmart Demand Forecasting App")
+st.title("📊 Walmart Demand Forecast Predictor")
+st.caption("Predict demand based on product, unit price, and holiday status")
 
-# ---- Load Model & Features ----
-@st.cache_resource
+# -----------------------------
+# 2️⃣ Load tiny model & product mapping
+# -----------------------------
+@st.cache_data
 def load_model():
-    try:
-        model = joblib.load("Walmart.pkl")
-        return model
-    except FileNotFoundError:
-        st.error("❌ Model or feature files not found! Make sure 'Walmart.pkl' and 'Walmart_features.pkl' are in the app folder.")
-        return None, None
+    rf_model = joblib.load("Walmart_tiny.pkl")          # tiny model (<100 KB)
+    product_lookup = joblib.load("Walmart_product.pkl") # product_id → product_name mapping
+    return rf_model, product_lookup
 
-rf_model = load_model()
+rf_model, product_lookup = load_model()
 
-if rf_model is not None:
-    st.success("Model loaded successfully!")
+# -----------------------------
+# 3️⃣ User input
+# -----------------------------
+st.subheader("Enter Product Details")
 
-    # ---- Manual Input Section ----
-    st.subheader("📝 Enter Unit Prices for Forecast")
+product_id = st.selectbox("Select Product ID", list(product_lookup.keys()))
+unit_price = st.number_input("Unit Price ($)", min_value=0.0, value=5.0, step=0.1)
+is_holiday = st.radio("Is it a holiday?", [0, 1], format_func=lambda x: "Yes" if x==1 else "No")
 
-    input_prices = st.text_area(
-        "Enter unit prices separated by commas (e.g., 5.99, 6.49, 7.25):",
-        value="5.99, 6.49, 7.25"
-    )
+# -----------------------------
+# 4️⃣ Prepare input
+# -----------------------------
+X_user = pd.DataFrame({
+    "unit_price": [unit_price],
+    "IsHoliday": [is_holiday]
+})
 
-    if st.button("Predict Demand"):
-        try:
-            # Convert input to list of floats
-            unit_price_list = [float(x.strip()) for x in input_prices.split(",")]
+# -----------------------------
+# 5️⃣ Make prediction
+# -----------------------------
+if st.button("Predict Demand"):
+    demand_pred = rf_model.predict(X_user)[0]
+    st.success(f"Predicted Demand for **{product_lookup[product_id]}**: {demand_pred:.1f} units")
 
-            # Create DataFrame
-            df_input = pd.DataFrame({"unit_price": unit_price_list})
-
-            # Encode & align with training features
-            df_encoded = pd.get_dummies(df_input)
-            df_encoded = df_encoded.reindex(columns=feature_columns, fill_value=0)
-
-            # Predict demand
-            predictions = rf_model.predict(df_encoded)
-            df_input["Forecasted_Demand"] = predictions.astype(int)
-
-            # Show results table
-            st.subheader("✅ Forecast Results")
-            st.dataframe(df_input)
-
-            # Plot graph
-            st.subheader("📊 Demand vs Unit Price")
-            fig, ax = plt.subplots(figsize=(8,5))
-            ax.plot(df_input["unit_price"], df_input["Forecasted_Demand"], marker="o")
-            ax.set_xlabel("Unit Price")
-            ax.set_ylabel("Forecasted Demand")
-            ax.set_title("Forecasted Demand Based on Unit Price")
-            ax.grid(True)
-            st.pyplot(fig)
-
-        except Exception as e:
-            st.error(f"❌ Error in prediction: {e}")
+# -----------------------------
+# 6️⃣ Optional: Show product name
+# -----------------------------
+st.write(f"✅ You selected: **{product_lookup[product_id]}**")
