@@ -6,7 +6,7 @@ import joblib
 from sklearn.ensemble import RandomForestRegressor
 
 # ---- Page Config ----
-st.set_page_config(page_title="Walmart Demand Forecast", layout="centered")
+st.set_page_config(page_title="Walmart Demand Forecast on Products", layout="centered")
 st.title("📈 Walmart Demand Forecasting on Products")
 
 # ---- Load Model & Features ----
